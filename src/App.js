@@ -1,24 +1,39 @@
-import logo from './logo.svg';
-import './App.css';
+import { Box, Button, TextField } from "@mui/material";
+import { useEffect, useState } from "react";
+import { io } from "socket.io-client";
 
 function App() {
+  const [socket, setSocket] = useState(null);
+  const [messageText, setMessageText] = useState("");
+
+  useEffect(() => {
+    setSocket(io("http://localhost:4000"));
+  }, []);
+
+  const handleFromSubmit = (e) => {
+    e.preventDefault();
+    console.log(messageText);
+    setMessageText("");
+  };
+
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
+    <>
+      <div>Hello socket</div>
+      <Box component="form" onSubmit={handleFromSubmit}>
+        <TextField
+          variant="standard"
+          size="small"
+          label="message"
+          value={messageText}
+          onChange={(e) => {
+            setMessageText(e.target.value);
+          }}
+        />
+        <Button type="submit" variant="text">
+          connect
+        </Button>
+      </Box>
+    </>
   );
 }
 
