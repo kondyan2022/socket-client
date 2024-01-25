@@ -9,29 +9,28 @@ import {
 } from "@mui/material";
 import SendIcon from "@mui/icons-material/Send";
 import { useCallback, useEffect, useState } from "react";
-import { io } from "socket.io-client";
+
 import debounce from "lodash.debounce";
+import { useOutletContext, useParams } from "react-router-dom";
 
 const ChatWindow = ({ children }) => {
-  const [socket, setSocket] = useState(null);
+  const { socket } = useOutletContext();
+  const { roomId } = useParams();
   const [messageText, setMessageText] = useState("");
   const [chatMessages, setChatMessages] = useState([]);
   const [isTyping, setIsTyping] = useState(false);
-
-  useEffect(() => {
-    setSocket(io("http://192.168.1.107:4000"));
-  }, []);
 
   useEffect(() => {
     if (!socket) return;
     socket.on("message-from-server", (data) => {
       setChatMessages((prev) => [
         ...prev,
-        { message: data.messageText, received: true },
+        { message: data.message, received: true },
       ]);
       console.log("Received from server", data);
     });
     socket.on("start-typing-from-server", () => {
+      console.log("start");
       setIsTyping(true);
     });
     socket.on("stop-typing-from-server", () => {
@@ -41,22 +40,22 @@ const ChatWindow = ({ children }) => {
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const startTyping = useCallback(
-    debounce(() => socket.emit("start-typing"), 800, {
+    debounce(() => socket.emit("start-typing", { roomId }), 800, {
       trailing: false,
       leading: true,
     }),
-    [socket]
+    [socket, roomId]
   );
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const stopTyping = useCallback(
-    debounce(() => socket.emit("stop-typing"), 800),
-    [socket]
+    debounce(() => socket.emit("stop-typing", { roomId }), 800),
+    [socket, roomId]
   );
 
   const handleFromSubmit = (e) => {
     e.preventDefault();
-    socket.emit("message-send", { messageText });
+    socket.emit("message-send", { message: messageText, roomId });
     setChatMessages((prev) => [
       ...prev,
       { message: messageText, received: false },
@@ -71,7 +70,7 @@ const ChatWindow = ({ children }) => {
   };
 
   return (
-    <Card sx={{ padding: 2, marginTop: 10, width: "50%" }}>
+    <Card sx={{ padding: 2, marginTop: 10, width: "50%" }} raised>
       <Box sx={{ marginBottom: 5 }}>
         {chatMessages.map(({ message, received }, index) => (
           <Typography
@@ -82,7 +81,7 @@ const ChatWindow = ({ children }) => {
           </Typography>
         ))}
       </Box>
-
+      {roomId && <Typography>{`Room ${roomId}`}</Typography>}
       <Box component="form" onSubmit={handleFromSubmit}>
         <InputLabel
           sx={{ opacity: isTyping ? "1" : "0" }}
@@ -105,6 +104,7 @@ const ChatWindow = ({ children }) => {
               </IconButton>
             </InputAdornment>
           }
+          autoComplete="off"
         />
         {children}
       </Box>
