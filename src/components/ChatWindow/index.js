@@ -1,1 +1,1 @@
-export * from "./ChatWindow.jsx";
+export * from "./ChatWindow";
