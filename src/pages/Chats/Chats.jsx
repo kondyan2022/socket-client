@@ -8,6 +8,7 @@ import {
   ListItem,
   ListItemAvatar,
   ListItemText,
+  Typography,
 } from "@mui/material";
 import ImageIcon from "@mui/icons-material/Image";
 import KeyboardIcon from "@mui/icons-material/Keyboard";
@@ -33,9 +34,9 @@ export const Chats = () => {
           userOnline = [],
           operatorOnline = [],
         } = await response.json();
+        setRooms(rooms);
         setOperatorOnline(operatorOnline);
         setUserOnline(userOnline);
-        setRooms(rooms);
       } catch (error) {
         console.log(error);
       }
@@ -64,6 +65,14 @@ export const Chats = () => {
       setUserOnline(user);
     });
     socketChats.on("refresh-rooms", () => {
+      fetchRooms();
+    });
+    socketChats.on("set-unread-message", ({ roomId, unreadMessagesCount }) => {
+      setRooms((prev) =>
+        prev.map((elem) =>
+          elem.roomId === roomId ? { ...elem, unreadMessagesCount } : elem
+        )
+      );
       fetchRooms();
     });
   }, [socketChats]);
@@ -95,6 +104,13 @@ export const Chats = () => {
                   color="success"
                   sx={{ opacity: typing.includes(room.roomId) ? "1" : "0" }}
                 />
+                <MessageIcon
+                  color="warning"
+                  sx={{ opacity: room.unreadMessagesCount ? "1" : "0" }}
+                />
+                <Typography>
+                  {room.unreadMessagesCount ? room.unreadMessagesCount : ""}
+                </Typography>
               </NavLink>
             </ListItem>
           ))}

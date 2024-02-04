@@ -41,8 +41,35 @@ const ChatWindow = ({ children, operator = false }) => {
   }, [operatorRoomId, operator]);
 
   useEffect(() => {
+    async function fetchRoom(roomId) {
+      try {
+        const response = await fetch(
+          `${process.env.REACT_APP_BACKEND}/rooms/${roomId}`
+        );
+        const {
+          room,
+          isUserOnline = false,
+          isOperatorOnline = false,
+        } = await response.json();
+        console.log("room=>", room);
+        console.log("messages=>", room.messages);
+        setInRoom(operator ? isUserOnline : isOperatorOnline);
+        setChatMessages(
+          room.messages.map((elem) => {
+            return {
+              message: elem.text,
+              received: operator ? !elem.operator : elem.operator,
+            };
+          })
+        );
+      } catch (error) {
+        console.log(error);
+      }
+    }
+
     if (roomId && socket) {
       socket.emit("join-room", { roomId, operator });
+      fetchRoom(roomId);
     }
   }, [roomId, socket, operator]);
 
@@ -50,7 +77,6 @@ const ChatWindow = ({ children, operator = false }) => {
     if (!socket) return;
     socket.on("connect", () => {
       setConnected(true);
-      // socket.emit("join-room", { roomId, operator });
     });
     socket.on("disconnect", () => {
       setConnected(false);
@@ -86,7 +112,6 @@ const ChatWindow = ({ children, operator = false }) => {
     });
 
     socket.on("start-typing-from-server", () => {
-      console.log("start");
       setIsTyping(true);
     });
     socket.on("stop-typing-from-server", () => {
@@ -117,7 +142,7 @@ const ChatWindow = ({ children, operator = false }) => {
 
   const handleFromSubmit = (e) => {
     e.preventDefault();
-    socket.emit("message-send", { message: messageText, roomId });
+    socket.emit("message-send", { message: messageText, roomId, operator });
     setChatMessages((prev) => [
       ...prev,
       { message: messageText, received: false },
